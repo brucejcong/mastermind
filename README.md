@@ -1,0 +1,1 @@
+Creating first in Ruby the game Mastermind, and then afterwards, will add Front-End to be more visually pleasing. 
