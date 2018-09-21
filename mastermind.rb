@@ -4,31 +4,43 @@ class Mastermind
 
 	def initialize
 		@turns = 12
+		@winner = nil
 		play
 	end
 
 	def play
 		puts "Yo, what's your name?"
 		player_name = gets.chomp
-		@codebreaker = Player.new(player_name, @@code_colors)
-		@codemaster = Computer.new(@@code_colors)
-		until @turns == 0
-			puts "Guess the code. Please enter 4 colors separated by comma. Here's the list of colors: " 
+		puts "Would you like to be codemaster. Yes or no?"
+		if gets.chomp.downcase.include?("yes")
+			@codemaster = Codemaster.new(player_name, @@code_colors)
+			@codebreaker = Codebreaker.new("computer", @@code_colors)
+		else
+			@codebreaker = Codebreaker.new(player_name, @@code_colors)
+			@codemaster = Codemaster.new("computer", @@code_colors)
+		end
+
+		until @turns == 0 
+			puts "You have #{@turns} to guess the code. Please enter 4 colors separated by comma. Here's the list of colors: " 
 			puts @@code_colors.join(", ")
 			guess = @codebreaker.guess
 
-			@codemaster.check_guess(guess)
-			@turns -= 1
+			if @codemaster.check_guess(guess).nil?
+				@turns -= 1
+			else
+				@turns = 0
+				@winner = @codebreaker
+			end
 		end
+		@winner = @codemaster if @winner.nil?
+		puts "#{@winner.player_name.capitalize} wins!"
 	end
 
 
-
-
-
-	class Player
+	class Codebreaker
+		attr_reader :player_name
 		def initialize(player_name, code_colors)
-			@name = player_name
+			@player_name = player_name
 			@code_colors = code_colors
 		end
 
@@ -53,10 +65,11 @@ class Mastermind
 
 	end
 
-	class Computer 
-		attr_reader :answer
-		def initialize(code_colors)
+	class Codemaster 
+		attr_reader :answer, :player_name
+		def initialize(player_name, code_colors)
 			@answer = Array.new()
+			@player_name = player_name
 			4.times do 
 				@answer << code_colors[rand(6)]
 			end
@@ -85,6 +98,7 @@ class Mastermind
 				end
 			end
 			puts "#{key[0]} correct guesses and #{key[1]} correct colors."
+			return "I lost." if key[0] == 4
 
 		end
 
