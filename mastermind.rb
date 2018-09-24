@@ -1,7 +1,7 @@
 class Mastermind
 
-	@@code_colors = ["Red", "Yellow", "Purple", "Blue", "Green", "Orange"]
-	@@color_information = "Please enter 4 colors separated by comma. Here's the list of colors: \n#{@@code_colors.join(", ")}"
+	@@code_colors = {r: "Red", y: "Yellow", p: "Purple", b: "Blue", g: "Green", o: "Orange"}
+	@@color_information = "Please enter 4 colors separated by comma. Here's the list of colors: \n#{@@code_colors.values.join(", ")}"
 
 	def initialize
 		@turns = 12
@@ -27,9 +27,11 @@ class Mastermind
 		puts "Codemaster, please enter your code."
 		puts @@color_information if @codemaster.player != :computer
 		@codemaster.create_code
-		until valid?(@codemaster.answer)
-			puts "Please enter a valid code. Example: 'Blue, Green, Purple, Yellow'."
-			@codemaster.create_code
+		if @codemaster.player != :computer
+			until valid?(@codemaster.answer)
+				puts "Please enter a valid code. Example: 'Blue, Green, Purple, Yellow'."
+				@codemaster.create_code
+			end
 		end
 
 		#Have codebreaker try to guess the code within 12 turns.
@@ -37,12 +39,13 @@ class Mastermind
 			puts "You have #{@turns} turns to guess the code. "
 			puts @@color_information if @codebreaker.player != :computer
 			guess = @codebreaker.guess
-			until valid?(guess)
-				puts "Please enter a valid guess. Example: 'Blue, Green, Purple, Yellow'."
-				guess = @codebreaker.guess
+
+			if @codebreaker.player != :computer
+				until valid?(guess)
+					puts "Please enter a valid guess. Example: 'Blue, Green, Purple, Yellow'."
+				end
 			end
 			puts "Codebreaker guesses: #{guess.join(", ")}"
-
 			#Codemaster checks whether the guessed code is right and gives feedback. 
 			feedback = Mastermind.check_guess(guess, @codemaster.answer)
 			if feedback[0] != 4
@@ -64,9 +67,10 @@ class Mastermind
 
 
 	def valid?(code)
-		return false if code.length != 4
+		# code = Mastermind.translate_values(code)
+		# p code
 		code.each do |color|
-			if !@@code_colors.include?(color.capitalize)
+			if !@@code_colors.values.include?(color.capitalize)
 				return false
 			end
 		end
@@ -98,35 +102,39 @@ class Mastermind
 		return key
 	end
 
+	def self.remove_whitespace(code)
+		code = code.gsub(/[\s,]/ ,"")
+		code
+	end
 
-
-
-	# def code
-	# 	puts "Please enter 4 colors separated by comma. Here's the list of colors: "
-	# 	puts @@code_colors.join(", ")
-	# 	guess = gets.chomp.split(/\s*,\s*/)
-	# 	until valid?(guess)
-	# 		puts "Please enter a valid guess. Example: 'Blue, Green, Purple, Yellow'."
-	# 		guess = gets.chomp.split(/\s*,\s*/)
-	# 	end
-	# 	guess
-
-	# end
+	def self.translate_values(code)
+		if Mastermind.remove_whitespace(code).length == 4
+			code = Mastermind.remove_whitespace(code).chars
+			code = code.map do |color|
+				@@code_colors[color.downcase.to_sym]
+			end
+		else
+			code = code.split(/\s*,\s*/)
+		end
+		code
+	end
 
 	class Codebreaker
 		attr_reader :player
 		def initialize(player, code_colors)
 			@player = player
-			@code_colors = code_colors
+			@code_colors = code_colors.values
 			if player == :computer
 				@previous_guess = nil
 				create_possible_codes_list
 			end
 		end
-
-		def guess
+	
+	 	def guess
 			if player != :computer
-				guess = gets.chomp.split(/\s*,\s*/)
+				# guess = ets.chomp.split(/\s*,\s*/)
+				guess = gets.chomp
+				guess = Mastermind.translate_values(guess)
 			else
 				if !@previous_guess.nil?
 					update_possible_codes_list
@@ -142,7 +150,7 @@ class Mastermind
 		end
 
 		def create_possible_codes_list
-			@possible_codes = []
+		 	@possible_codes = []
 			@code_colors.each do |color1|
 				@code_colors.each do |color2|
 					@code_colors.each do |color3|
@@ -160,20 +168,6 @@ class Mastermind
 			end
 		end
 
-
-
-
-
-		# def valid?(guess)
-		# 	return false if guess.length != 4
-		# 	guess.each do |color|
-		# 		if !@code_colors.include?(color.capitalize)
-		# 			return false
-		# 		end
-		# 	end
-		# 	return true
-		# end
-
 	end
 
 	class Codemaster 
@@ -181,7 +175,7 @@ class Mastermind
 		def initialize(player, code_colors)
 			@answer = Array.new()
 			@player = player
-			@code_colors = code_colors
+			@code_colors = code_colors.values
 			# if @player == :computer
 			# 	4.times do 
 			# 		@answer << code_colors[rand(6)]
@@ -195,38 +189,11 @@ class Mastermind
 					@answer << @code_colors[rand(6)]
 				end
 			else
-				code = gets.chomp.split(/\s*,\s*/).map(&:capitalize)
-				@answer = code
+				# code = gets.chomp.split(/\s*,\s*/).map(&:capitalize)
+				code = gets.chomp
+				@answer = Mastermind.translate_values(code)
 			end
 		end
-
-
-		# def check_guess(guess)
-		# 	color_counts = Hash.new(0)
-
-		# 	# Item 1 = Right color and position,
-		# 	# Item 2 = Only right color
-		# 	key = Array.new(2){0}
-		# 	guess.each_with_index do |color, position|
-		# 		color_counts[color.capitalize.to_sym] += 1
-		# 		if @answer.include?(color.capitalize)
-		# 			if @answer[position] == color.capitalize
-		# 				key[0] += 1
-		# 				if @answer.count(color.capitalize) < color_counts[color.capitalize.to_sym]
-		# 					key[1] -= 1
-		# 				end
-		# 			else
-		# 				if @answer.count(color.capitalize) >= color_counts[color.capitalize.to_sym]
-		# 					key[1] += 1
-		# 				end
-		# 			end
-
-		# 		end
-		# 	end
-		# 	puts "#{key[0]} correct guesses and #{key[1]} correct colors."
-		# 	return key
-		# end
-
 
 	end
 
